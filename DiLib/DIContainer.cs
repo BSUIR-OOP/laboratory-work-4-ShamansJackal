@@ -1,5 +1,7 @@
-﻿using System;
+﻿using DiLib.Exptions;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace DiLib
@@ -10,10 +12,34 @@ namespace DiLib
 
     public partial class DIContainer
     {
-        private readonly Dictionary<Type, GetServiceDelegate> _services = new Dictionary<Type, DiLib.GetServiceDelegate>();
+        private readonly Dictionary<Type, HashSet<Type>> dependencies = new();
 
-        private readonly Dictionary<Type, object> _cache = new Dictionary<Type, object>();
-        private readonly Dictionary<Type, ConstructorInfo> _ctors = new Dictionary<Type, ConstructorInfo>();
+        private readonly Dictionary<Type, GetServiceDelegate> _services = new();
+
+        private readonly Dictionary<Type, object> _cache = new();
+        private readonly Dictionary<Type, object> _ctors = new();
+
+        private void AddToTree(Type dependency)
+        {
+            var ctors = dependency.GetConstructors();
+
+            var parameters = ctors[0].GetParameters();
+            foreach (var parm in parameters)
+            {
+                if(!dependencies.ContainsKey(parm.ParameterType)) throw new Exception("No such type");
+                if (HasCycles(parm.ParameterType, new HashSet<Type>() { dependency })) throw new CycleExeption("Has cycles");                
+            }
+            dependencies[dependency] = new HashSet<Type>(parameters.Select(x => x.ParameterType));
+        }
+
+        private bool HasCycles(Type type, HashSet<Type> NeedType)
+        {
+            if (NeedType.Contains(type)) return true;
+            NeedType.Add(type);
+            foreach (var item in dependencies[type])
+                if (HasCycles(item, new HashSet<Type>(NeedType))) return true;
+            return false;
+        }
 
         public object GetService(Type type)
         {
@@ -42,14 +68,20 @@ namespace DiLib
         private object GetTransition(Type type)
         {
             var ctor = _ctors[type];
+            if (ctor is ConstructorInfo info) {
+                var param = info.GetParameters();
+                List<object> list = new();
+                foreach (var par in param)
+                {
+                    list.Add(GetService(par.ParameterType));
+                }
 
-            var param = ctor.GetParameters();
-            List<object> list = new();
-            foreach(var par in param)
-            {
-                list.Add(this.GetService(par.ParameterType));
+                return info.Invoke(list.ToArray()); 
             }
-            return ctor.Invoke(list.ToArray());
+            else
+            {
+                return ((Func<object>)ctor)();
+            }
         }
     }
 }

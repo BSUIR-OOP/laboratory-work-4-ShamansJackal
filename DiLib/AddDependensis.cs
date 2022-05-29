@@ -10,7 +10,7 @@ namespace DiLib
     {
         public void AddSingelton<TService>() where TService : class
         {
-            if (typeof(TService).GetConstructors().Length > 1) throw new Exception("To many ctor's");
+            AddToTree(typeof(TService));
 
             _services[typeof(TService)] = GetSingleton;
             _ctors[typeof(TService)] = typeof(TService).GetConstructors()[0];
@@ -18,7 +18,7 @@ namespace DiLib
 
         public void AddSingelton<TService, TImplementaion>() where TService : class where TImplementaion : class, TService
         {
-            if (typeof(TService).GetConstructors().Length > 1) throw new Exception("To many ctor's");
+            AddToTree(typeof(TService));
 
             _services[typeof(TImplementaion)] = GetSingleton;
             _ctors[typeof(TImplementaion)] = typeof(TService).GetConstructors()[0];
@@ -26,7 +26,7 @@ namespace DiLib
 
         public void AddTransition<TService>() where TService : class
         {
-            if (typeof(TService).GetConstructors().Length > 1) throw new Exception("To many ctor's");
+            AddToTree(typeof(TService));
 
             _services[typeof(TService)] = GetTransition;
             _ctors[typeof(TService)] = typeof(TService).GetConstructors()[0];
@@ -34,10 +34,26 @@ namespace DiLib
 
         public void AddTransition<TService, TImplementaion>() where TService : class where TImplementaion : class, TService
         {
-            if (typeof(TService).GetConstructors().Length > 1) throw new Exception("To many ctor's");
+            AddToTree(typeof(TService));
 
             _services[typeof(TImplementaion)] = GetTransition;
             _ctors[typeof(TImplementaion)] = typeof(TService).GetConstructors()[0];
+        }
+
+        public void AddTransition<TService>(Func<TService> func) where TService: class
+        {
+            dependencies[typeof(TService)] = new();
+
+            _services[typeof(TService)] = GetTransition;
+            _ctors[typeof(TService)] = func;
+        }
+
+        public void AddSingleton<TService>(Func<TService> func) where TService : class
+        {
+            dependencies[typeof(TService)] = new();
+
+            _services[typeof(TService)] = GetSingleton;
+            _ctors[typeof(TService)] = func;
         }
     }
 }

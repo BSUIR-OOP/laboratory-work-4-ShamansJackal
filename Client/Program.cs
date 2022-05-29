@@ -5,43 +5,19 @@ namespace Client
 {
     internal class Program
     {
-        public class TestClass
-        {
-            private string name;
-            public TestClass()
-            {
-                name = "dsa";
-            }
-
-            public void Print()
-            {
-                Console.WriteLine(name);
-            }
-        }
-
-        public class TestClass2
-        {
-            private TestClass testClass;
-            public TestClass2(TestClass testClass)
-            {
-                this.testClass = testClass;
-            }
-
-            public void P() => testClass.Print();
-        }
-
         static void Main(string[] args)
         {
             var container = new DIContainer();
 
-            container.AddTransition<TestClass>();
-            container.AddTransition<TestClass2>();
+            container.AddSingleton(() => new Logger("hh-mm-ss"));
+            container.AddTransition<Random>();
+            container.AddTransition<StringGenerator>();
+            container.AddTransition<Spamer>();
 
-            var d = container.GetService<TestClass2>();
-            d.P();
+            var d = container.GetService<Spamer>();
+            d.Spam();
 
             Console.ReadKey();
-            Console.WriteLine("Hello World!");
         }
     }
 }
